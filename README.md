@@ -1,4 +1,4 @@
-# Gene Expression Visualization App
+# Gene Expression Visualization App 
 ## Features
 ### Gene Expression Visualization: 
 Select up to 5 genes to compare their expression levels across treatments. View results as an interactive line plot.
@@ -16,4 +16,5 @@ Leave unused boxes empty.
 Line plots show the expression levels of selected genes across treatments.
 Correlation heatmaps (for at least 2 genes) highlight relationships between selected genes.
 Explore Raw Data:
+# Licensed by Koba's Lab
 
