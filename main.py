@@ -29,7 +29,7 @@ genes = [st.sidebar.text_input(f"Gene {i + 1} (Optional):", key=f"gene_{i}") for
 genes = [gene for gene in genes if gene]
 
 # Section: Individual Gene Analysis
-st.header("📊 Individual Gene Analysis")
+st.header("📊 Individual Gene High-Corr Retrieval")
 if gene_name:
     if gene_name in df.index:
         col1, col2 = st.columns([1, 1])
@@ -114,7 +114,7 @@ if genes:
             st.pyplot(plt)
 
 # Section: Creative Visualizations
-st.header("🎨 Creative Visualizations")
+st.header("🎨 Point-wise Visualizations")
 
 # Heatmap of Gene-Treatment Responses
 st.subheader("Heatmap of Selected Gene Responses Across Treatments")
