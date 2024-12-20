@@ -8,7 +8,7 @@ st.title("Gene Expression and Correlation Analysis Tool")
 st.subheader("Visualize gene expression and discover correlations")
 
 # Step 1: Load Dataset
-@st.cache
+@st.cache_data
 def load_data():
     file_path = 'Anticancer_Drug_Treatment_DATA.txt'  # Ensure this file is in the same directory
     df = pd.read_csv(file_path, sep='\t', header=0, index_col=0)
@@ -70,6 +70,7 @@ else:
 # Optional: Display Raw Data
 if st.checkbox("📂 Show raw dataset"):
     st.dataframe(df)
+
 
 
 # Footer
