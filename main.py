@@ -4,11 +4,11 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 # Set page layout
-st.set_page_config(layout="wide", page_title="Gene Expression and Correlation Analysis")
+st.set_page_config(layout="wide", page_title="Gene Expression and Treatment Analysis")
 
 # Title
-st.title("🔬 Gene Expression and Correlation Analysis Tool")
-st.markdown("Analyze gene expression across treatments, explore correlations, and uncover insights with advanced visualizations.")
+st.title("🔬 Gene Expression and Treatment Analysis Tool")
+st.markdown("Analyze gene expression across treatments, explore correlations, and visualize grouped treatment responses with advanced tools.")
 
 # Step 1: Load Dataset
 @st.cache_data
@@ -21,6 +21,20 @@ def load_data():
 
 df = load_data()
 
+# Mapping TT codes to treatment types
+treatment_mapping = {
+    "TT-235": "DMSO", "TT-236": "DMSO", "TT-237": "DMSO", "TT-238": "DMSO", "TT-239": "DMSO", "TT-240": "DMSO",
+    "TT-241": "Doxorubicin", "TT-242": "Doxorubicin",
+    "TT-243": "Bortezomib", "TT-244": "Bortezomib",
+    "TT-245": "Tegretol", "TT-246": "Tegretol",
+    "TT-247": "WZ8040", "TT-248": "WZ8040",
+    "TT-249": "PHA-767491", "TT-250": "PHA-767491",
+    "TT-251": "BI 2536", "TT-252": "BI 2536",
+    "TT-253": "Daunorubicin", "TT-254": "Daunorubicin",
+    "TT-255": "Nitrendipine", "TT-256": "Nitrendipine",
+    "TT-257": "Solifenacin", "TT-258": "Solifenacin"
+}
+
 # Sidebar for Inputs
 st.sidebar.header("Input Options")
 gene_name = st.sidebar.text_input("🔎 Enter a gene name for individual analysis:")
@@ -29,7 +43,7 @@ genes = [st.sidebar.text_input(f"Gene {i + 1} (Optional):", key=f"gene_{i}") for
 genes = [gene for gene in genes if gene]
 
 # Section: Individual Gene Analysis
-st.header("📊 Individual Gene High-Corr Retrieval")
+st.header("📊 Individual Gene High-Correlation Retrieval")
 if gene_name:
     if gene_name in df.index:
         col1, col2 = st.columns([1, 1])
@@ -113,54 +127,52 @@ if genes:
             plt.tight_layout()
             st.pyplot(plt)
 
-# Section: Creative Visualizations
-st.header("🎨 Point-wise Visualizations")
+# Section: Treatment-Type Visualizations
+st.header("🧪 Treatment-Type Visualizations")
 
-# Heatmap of Gene-Treatment Responses
-st.subheader("Heatmap of Selected Gene Responses Across Treatments")
-if genes:
-    selected_gene_data = df.loc[valid_genes]
-    plt.figure(figsize=(12, 8))
-    sns.heatmap(
-        selected_gene_data,
-        cmap="coolwarm",
-        annot=False,
-        cbar=True,
-        xticklabels=True,
-        yticklabels=True
+# Group by treatment types
+df_long = df.melt(var_name="TT Code", value_name="Expression")
+df_long["Treatment"] = df_long["TT Code"].map(treatment_mapping)
+treatment_groups = df_long.groupby("Treatment")
+
+for treatment, group_data in treatment_groups:
+    st.subheader(f"Treatment: {treatment}")
+    
+    # Calculate mean and standard deviation
+    summary_stats = group_data.groupby("TT Code").agg({"Expression": ["mean", "std"]}).reset_index()
+    summary_stats.columns = ["TT Code", "Mean Expression", "Std Expression"]
+
+    # Bar plot with error bars
+    plt.figure(figsize=(8, 6))
+    sns.barplot(
+        data=summary_stats,
+        x="TT Code",
+        y="Mean Expression",
+        yerr=summary_stats["Std Expression"],
+        palette="gray",
+        ci=None
     )
-    plt.title("Heatmap of Selected Gene Responses Across Treatments", fontsize=16)
-    plt.xlabel("Treatments", fontsize=14)
-    plt.ylabel("Genes", fontsize=14)
+
+    # Overlay individual data points
+    sns.stripplot(
+        data=group_data,
+        x="TT Code",
+        y="Expression",
+        color="black",
+        size=6,
+        jitter=True
+    )
+
+    # Add plot formatting
+    plt.title(f"Expression Levels for {treatment}", fontsize=16)
+    plt.xlabel("TT Code", fontsize=14)
+    plt.ylabel("Expression Level", fontsize=14)
+    plt.xticks(rotation=45, fontsize=12)
     plt.tight_layout()
     st.pyplot(plt)
-
-# Interactive Scatter Plot
-st.subheader("Interactive Gene-Treatment Scatter Plot")
-if gene_name and gene_name in df.index:
-    gene_data = df.loc[gene_name]
-    treatment = st.selectbox("Select a Treatment for Scatter Plot:", df.columns)
-    plt.figure(figsize=(8, 6))
-    sns.scatterplot(
-        x=gene_data.index,
-        y=gene_data.values,
-        color="blue",
-        s=100
-    )
-    plt.axvline(x=treatment, color="red", linestyle="--", label=f"Selected: {treatment}")
-    plt.title(f"Expression Levels of {gene_name} Across Treatments", fontsize=16)
-    plt.xlabel("Treatments", fontsize=14)
-    plt.ylabel("Expression Level", fontsize=14)
-    plt.legend()
-    plt.grid(True)
-    st.pyplot(plt)
-
-
 
 # Footer
 st.markdown("""
 ---
 Designed by Louis Cui and supervised by Dr. Satoru Kobayashi.  
 """)
-
-
