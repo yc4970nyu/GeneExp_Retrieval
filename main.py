@@ -142,13 +142,16 @@ for treatment, group_data in treatment_groups:
     summary_stats = group_data.groupby("TT Code").agg({"Expression": ["mean", "std"]}).reset_index()
     summary_stats.columns = ["TT Code", "Mean Expression", "Std Expression"]
 
+    # Ensure there are no NaN values in Std Expression
+    summary_stats["Std Expression"] = summary_stats["Std Expression"].fillna(0)
+
     # Bar plot with error bars
     plt.figure(figsize=(8, 6))
     sns.barplot(
         data=summary_stats,
         x="TT Code",
         y="Mean Expression",
-        yerr=summary_stats["Std Expression"],
+        yerr=summary_stats["Std Expression"],  # Use error bars
         palette="gray",
         ci=None
     )
@@ -176,3 +179,4 @@ st.markdown("""
 ---
 Designed by Louis Cui and supervised by Dr. Satoru Kobayashi.  
 """)
+
