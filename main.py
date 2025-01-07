@@ -142,8 +142,15 @@ for treatment, group_data in treatment_groups:
     summary_stats = group_data.groupby("TT Code").agg({"Expression": ["mean", "std"]}).reset_index()
     summary_stats.columns = ["TT Code", "Mean Expression", "Std Expression"]
 
-    # Ensure there are no NaN values in Std Expression
+    # Ensure Std Expression has no NaN values and is valid
     summary_stats["Std Expression"] = summary_stats["Std Expression"].fillna(0)
+
+    # Check if yerr values are valid
+    if summary_stats["Std Expression"].isnull().any() or (summary_stats["Std Expression"] < 0).any():
+        st.warning(f"Invalid error bar values detected for {treatment}. Error bars will be skipped.")
+        yerr = None
+    else:
+        yerr = summary_stats["Std Expression"]
 
     # Bar plot with error bars
     plt.figure(figsize=(8, 6))
@@ -151,7 +158,7 @@ for treatment, group_data in treatment_groups:
         data=summary_stats,
         x="TT Code",
         y="Mean Expression",
-        yerr=summary_stats["Std Expression"],  # Use error bars
+        yerr=yerr,  # Use error bars if valid
         palette="gray",
         ci=None
     )
@@ -179,4 +186,5 @@ st.markdown("""
 ---
 Designed by Louis Cui and supervised by Dr. Satoru Kobayashi.  
 """)
+
 
