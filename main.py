@@ -42,8 +42,8 @@ st.sidebar.subheader("Select Up to 5 Genes for Group Analysis")
 genes = [st.sidebar.text_input(f"Gene {i + 1} (Optional):", key=f"gene_{i}") for i in range(5)]
 genes = [gene for gene in genes if gene]
 
-# Section: New Feature - Combined Graph for Treatment Types
-st.header("📊 Gene Expression Across All Treatment Types (Normalized)")
+# Section: New Feature - Improved Combined Graph for Treatment Types
+st.header("📊 Gene Expression Across All Treatment Types (Improved Visualization)")
 if gene_name:
     if gene_name in df.index:
         # Filter data for the selected gene
@@ -60,14 +60,19 @@ if gene_name:
         # Group by treatment types
         treatment_groups = gene_long.groupby("Treatment")
 
-        # Combined plot for all treatment types
-        plt.figure(figsize=(12, 8))
+        # Prepare X-axis positions for grouped treatments
         bar_width = 0.5
+        gap_between_groups = 2
         x_positions = []
         x_labels = []
+        group_start = 0  # Start position for each treatment type
+
+        # Combined plot
+        plt.figure(figsize=(14, 8))
+
         for idx, (treatment, group_data) in enumerate(treatment_groups):
-            # Calculate x-axis positions for each treatment
-            x = np.arange(len(group_data)) + idx * 1.2
+            # Calculate x-axis positions for the group
+            x = np.arange(len(group_data)) + group_start
             x_positions.extend(x)
             x_labels.extend(group_data["TT Code"])
 
@@ -78,10 +83,14 @@ if gene_name:
             )
 
             # Overlay individual data points
-            plt.scatter(x, group_data["Normalized Expression"], color='black', s=50, alpha=0.8)
+            for i, tt_code in enumerate(group_data["TT Code"]):
+                plt.scatter([x[i]] * len(group_data), group_data["Normalized Expression"], color='black', s=50)
+
+            # Increment group_start to create space between treatment types
+            group_start = x[-1] + gap_between_groups
 
         # Plot formatting
-        plt.xticks(x_positions, x_labels, rotation=45, fontsize=10)
+        plt.xticks(x_positions, x_labels, rotation=90, fontsize=10)
         plt.xlabel("Treatments (TT Codes)", fontsize=14)
         plt.ylabel("Normalized Expression", fontsize=14)
         plt.title(f"Normalized Expression of {gene_name} Across All Treatment Types", fontsize=16)
@@ -90,7 +99,7 @@ if gene_name:
         st.pyplot(plt)
     else:
         st.error(f"Gene '{gene_name}' not found in the dataset.")
-
+        
 # Section: Individual Gene Analysis
 st.header("📊 Individual Gene High-Correlation Retrieval")
 if gene_name:
