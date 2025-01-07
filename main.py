@@ -42,7 +42,7 @@ st.sidebar.subheader("Select Up to 5 Genes for Group Analysis")
 genes = [st.sidebar.text_input(f"Gene {i + 1} (Optional):", key=f"gene_{i}") for i in range(5)]
 genes = [gene for gene in genes if gene]
 
-# Section: New Feature - Improved Visualization with Box Plot
+# Section: New Feature - Box Plot for Treatment Types
 st.header("📊 Gene Expression Across All Treatment Types (Box Plot)")
 if gene_name:
     if gene_name in df.index:
@@ -57,7 +57,10 @@ if gene_name:
         gene_long.columns = ["TT Code", "Normalized Expression"]
         gene_long["Treatment"] = gene_long["TT Code"].map(treatment_mapping)
 
-        # Box plot with individual data points
+        # Check for missing values
+        gene_long.dropna(subset=["Normalized Expression"], inplace=True)
+
+        # Create box plot with individual data points
         plt.figure(figsize=(12, 8))
         sns.boxplot(
             data=gene_long,
