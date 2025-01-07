@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
-import seaborn as sns
+import numpy as np
 
 # Set page layout
 st.set_page_config(layout="wide", page_title="Gene Expression and Treatment Analysis")
@@ -42,47 +42,6 @@ st.sidebar.subheader("Select Up to 5 Genes for Group Analysis")
 genes = [st.sidebar.text_input(f"Gene {i + 1} (Optional):", key=f"gene_{i}") for i in range(5)]
 genes = [gene for gene in genes if gene]
 
-# Section: Individual Gene Analysis
-st.header("📊 Individual Gene High-Correlation Retrieval")
-if gene_name:
-    if gene_name in df.index:
-        col1, col2 = st.columns([1, 1])
-        
-        # Gene Expression Line Plot
-        with col1:
-            st.subheader(f"Expression Levels of {gene_name}")
-            plt.figure(figsize=(10, 6))
-            plt.plot(df.columns, df.loc[gene_name], marker='o', label=f'{gene_name}', color='blue')
-            plt.title(f"Expression Levels of {gene_name} Across Treatments", fontsize=16)
-            plt.xlabel("Treatments", fontsize=14)
-            plt.ylabel("Expression Level", fontsize=14)
-            plt.xticks(rotation=45, fontsize=12)
-            plt.legend(fontsize=12)
-            plt.grid(True)
-            plt.tight_layout()
-            st.pyplot(plt)
-
-        # Top 10 Correlated Genes
-        with col2:
-            st.subheader(f"Top 10 Correlated Genes with {gene_name}")
-            correlations = df.corrwith(df.loc[gene_name], axis=1)
-            top_correlated_genes = correlations.drop(gene_name).sort_values(ascending=False).head(10)
-            st.table(top_correlated_genes)
-
-            plt.figure(figsize=(8, 6))
-            sns.barplot(
-                x=top_correlated_genes.values,
-                y=top_correlated_genes.index,
-                palette="coolwarm"
-            )
-            plt.title(f"Top 10 Correlated Genes with {gene_name}", fontsize=16)
-            plt.xlabel("Pearson Correlation", fontsize=14)
-            plt.ylabel("Genes", fontsize=14)
-            plt.tight_layout()
-            st.pyplot(plt)
-    else:
-        st.error(f"Gene '{gene_name}' not found in the dataset.")
-
 # Section: Treatment-Type Visualizations
 st.header("🧪 Treatment-Type Visualizations")
 
@@ -101,42 +60,26 @@ for treatment, group_data in treatment_groups:
     # Ensure Std Expression has no NaN values
     summary_stats["Std Expression"] = summary_stats["Std Expression"].fillna(0)
 
-    # Validate yerr shape to avoid errors
-    try:
-        yerr = summary_stats["Std Expression"].values
-        if len(yerr) != len(summary_stats["TT Code"]):
-            raise ValueError("Invalid shape for yerr.")
-    except Exception as e:
-        st.warning(f"Error with error bars for {treatment}: {e}. Error bars will be skipped.")
-        yerr = None
-
-    # Bar plot with error bars
+    # Matplotlib bar plot with error bars
     plt.figure(figsize=(8, 6))
-    sns.barplot(
-        data=summary_stats,
-        x="TT Code",
-        y="Mean Expression",
-        yerr=yerr,  # Validated error bars
-        palette="gray",
-        ci=None
-    )
+    x = np.arange(len(summary_stats["TT Code"]))  # X-axis positions
+    means = summary_stats["Mean Expression"]
+    errors = summary_stats["Std Expression"]
+
+    plt.bar(x, means, yerr=errors, capsize=5, color='gray', alpha=0.7, edgecolor='black', label="Mean ± Std")
+    plt.xticks(x, summary_stats["TT Code"], rotation=45, fontsize=12)
+    plt.ylabel("Expression Level", fontsize=14)
+    plt.xlabel("TT Code", fontsize=14)
+    plt.title(f"Expression Levels for {treatment}", fontsize=16)
+    plt.tight_layout()
 
     # Overlay individual data points
-    sns.stripplot(
-        data=group_data,
-        x="TT Code",
-        y="Expression",
-        color="black",
-        size=6,
-        jitter=True
-    )
+    for idx, tt_code in enumerate(summary_stats["TT Code"]):
+        tt_data = group_data[group_data["TT Code"] == tt_code]["Expression"]
+        jittered_x = np.random.normal(x[idx], 0.05, size=len(tt_data))  # Add jitter for visualization
+        plt.scatter(jittered_x, tt_data, color='black', s=20, label="Data Points" if idx == 0 else "")
 
-    # Add plot formatting
-    plt.title(f"Expression Levels for {treatment}", fontsize=16)
-    plt.xlabel("TT Code", fontsize=14)
-    plt.ylabel("Expression Level", fontsize=14)
-    plt.xticks(rotation=45, fontsize=12)
-    plt.tight_layout()
+    plt.legend()
     st.pyplot(plt)
 
 # Footer
