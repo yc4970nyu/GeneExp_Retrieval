@@ -46,40 +46,45 @@ genes = [gene for gene in genes if gene]
 st.header("📊 Gene Expression Across All Treatment Types (Normalized)")
 if gene_name:
     if gene_name in df.index:
-        # Normalize data
-        normalized_df = df.div(df.max(axis=1), axis=0)
+        # Filter data for the selected gene
+        gene_data = df.loc[gene_name]
+
+        # Normalize the gene data
+        normalized_gene_data = gene_data / gene_data.max()
 
         # Prepare data for plotting
-        df_long = normalized_df.melt(var_name="TT Code", value_name="Expression")
-        df_long["Treatment"] = df_long["TT Code"].map(treatment_mapping)
-        treatment_groups = df_long.groupby("Treatment")
+        gene_long = normalized_gene_data.reset_index()
+        gene_long.columns = ["TT Code", "Normalized Expression"]
+        gene_long["Treatment"] = gene_long["TT Code"].map(treatment_mapping)
+
+        # Group by treatment types
+        treatment_groups = gene_long.groupby("Treatment")
 
         # Combined plot for all treatment types
         plt.figure(figsize=(12, 8))
+        bar_width = 0.5
+        x_positions = []
+        x_labels = []
         for idx, (treatment, group_data) in enumerate(treatment_groups):
-            # Calculate mean and std for the treatment group
-            summary_stats = group_data.groupby("TT Code").agg({"Expression": ["mean", "std"]}).reset_index()
-            summary_stats.columns = ["TT Code", "Mean Expression", "Std Expression"]
+            # Calculate x-axis positions for each treatment
+            x = np.arange(len(group_data)) + idx * 1.2
+            x_positions.extend(x)
+            x_labels.extend(group_data["TT Code"])
 
             # Bar plot for the treatment
-            x = np.arange(len(summary_stats["TT Code"])) + idx * 1.1  # Adjust x-axis positions for grouping
-            means = summary_stats["Mean Expression"]
-            errors = summary_stats["Std Expression"]
             plt.bar(
-                x, means, yerr=errors, capsize=5, color=f"C{idx % 10}", alpha=0.7, edgecolor='black', label=treatment
+                x, group_data["Normalized Expression"],
+                width=bar_width, color=f"C{idx % 10}", alpha=0.7, edgecolor='black', label=treatment
             )
 
             # Overlay individual data points
-            for i, tt_code in enumerate(summary_stats["TT Code"]):
-                tt_data = group_data[group_data["TT Code"] == tt_code]["Expression"]
-                jittered_x = np.random.normal(x[i], 0.05, size=len(tt_data))  # Add jitter for individual points
-                plt.scatter(jittered_x, tt_data, color='black', s=20, alpha=0.8)
+            plt.scatter(x, group_data["Normalized Expression"], color='black', s=50, alpha=0.8)
 
         # Plot formatting
-        plt.xlabel("Treatments", fontsize=14)
+        plt.xticks(x_positions, x_labels, rotation=45, fontsize=10)
+        plt.xlabel("Treatments (TT Codes)", fontsize=14)
         plt.ylabel("Normalized Expression", fontsize=14)
         plt.title(f"Normalized Expression of {gene_name} Across All Treatment Types", fontsize=16)
-        plt.xticks([], fontsize=12)  # Hide individual TT codes on the x-axis for clarity
         plt.legend(title="Treatment Types", fontsize=12)
         plt.tight_layout()
         st.pyplot(plt)
@@ -134,7 +139,7 @@ if genes:
         # Multi-Gene Line Plot
         st.subheader("Expression Levels of Selected Genes")
         plt.figure(figsize=(12, 8))
-        palette = sns.color_palette("Set2", len(valid_genes))
+        palette = plt.cm.Set2(np.linspace(0, 1, len(valid_genes)))
         for idx, gene in enumerate(valid_genes):
             plt.plot(df.columns, df.loc[gene], marker='o', label=f'{gene}', color=palette[idx])
         plt.title("Expression Levels of Selected Genes Across Treatments", fontsize=16)
@@ -151,17 +156,11 @@ if genes:
             st.subheader("Correlation Matrix of Selected Genes")
             correlation_matrix = df.loc[valid_genes].T.corr()
             plt.figure(figsize=(8, 6))
-            sns.heatmap(
-                correlation_matrix,
-                annot=True,
-                cmap="coolwarm",
-                fmt=".2f",
-                cbar=True,
-                xticklabels=valid_genes,
-                yticklabels=valid_genes,
-                linewidths=0.5
-            )
-            plt.title("Correlation Matrix of Selected Genes", fontsize=16)
+            plt.imshow(correlation_matrix, cmap="coolwarm", interpolation='nearest')
+            plt.colorbar()
+            plt.title("Correlation Matrix", fontsize=16)
+            plt.xticks(range(len(valid_genes)), valid_genes, rotation=45, fontsize=10)
+            plt.yticks(range(len(valid_genes)), valid_genes, fontsize=10)
             plt.tight_layout()
             st.pyplot(plt)
 
@@ -170,6 +169,7 @@ st.markdown("""
 ---
 Designed by Louis Cui and supervised by Dr. Satoru Kobayashi.  
 """)
+
 
 
 
