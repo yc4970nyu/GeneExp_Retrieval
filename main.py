@@ -167,6 +167,9 @@ if genes:
 # Footer
 st.markdown("""
 ---
+Source: 
+https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE172181
+---
 Designed by Louis Cui and supervised by Dr. Satoru Kobayashi.  
 """)
 
