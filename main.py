@@ -83,50 +83,6 @@ if gene_name:
     else:
         st.error(f"Gene '{gene_name}' not found in the dataset.")
 
-# Section: Group Gene Analysis
-st.header("📈 Group Gene Analysis")
-if genes:
-    valid_genes = [gene for gene in genes if gene in df.index]
-    invalid_genes = [gene for gene in genes if gene not in df.index]
-
-    if invalid_genes:
-        st.error(f"The following genes were not found: {', '.join(invalid_genes)}")
-
-    if valid_genes:
-        # Multi-Gene Line Plot
-        st.subheader("Expression Levels of Selected Genes")
-        plt.figure(figsize=(12, 8))
-        palette = sns.color_palette("Set2", len(valid_genes))
-        for idx, gene in enumerate(valid_genes):
-            plt.plot(df.columns, df.loc[gene], marker='o', label=f'{gene}', color=palette[idx])
-        plt.title("Expression Levels of Selected Genes Across Treatments", fontsize=16)
-        plt.xlabel("Treatments", fontsize=14)
-        plt.ylabel("Expression Levels", fontsize=14)
-        plt.xticks(rotation=45, fontsize=12)
-        plt.legend(title="Genes", fontsize=12, title_fontsize=14)
-        plt.grid(True)
-        plt.tight_layout()
-        st.pyplot(plt)
-
-        # Correlation Matrix
-        if len(valid_genes) > 1:
-            st.subheader("Correlation Matrix of Selected Genes")
-            correlation_matrix = df.loc[valid_genes].T.corr()
-            plt.figure(figsize=(8, 6))
-            sns.heatmap(
-                correlation_matrix,
-                annot=True,
-                cmap="coolwarm",
-                fmt=".2f",
-                cbar=True,
-                xticklabels=valid_genes,
-                yticklabels=valid_genes,
-                linewidths=0.5
-            )
-            plt.title("Correlation Matrix of Selected Genes", fontsize=16)
-            plt.tight_layout()
-            st.pyplot(plt)
-
 # Section: Treatment-Type Visualizations
 st.header("🧪 Treatment-Type Visualizations")
 
@@ -142,15 +98,17 @@ for treatment, group_data in treatment_groups:
     summary_stats = group_data.groupby("TT Code").agg({"Expression": ["mean", "std"]}).reset_index()
     summary_stats.columns = ["TT Code", "Mean Expression", "Std Expression"]
 
-    # Ensure Std Expression has no NaN values and is valid
+    # Ensure Std Expression has no NaN values
     summary_stats["Std Expression"] = summary_stats["Std Expression"].fillna(0)
 
-    # Check if yerr values are valid
-    if summary_stats["Std Expression"].isnull().any() or (summary_stats["Std Expression"] < 0).any():
-        st.warning(f"Invalid error bar values detected for {treatment}. Error bars will be skipped.")
+    # Validate yerr shape to avoid errors
+    try:
+        yerr = summary_stats["Std Expression"].values
+        if len(yerr) != len(summary_stats["TT Code"]):
+            raise ValueError("Invalid shape for yerr.")
+    except Exception as e:
+        st.warning(f"Error with error bars for {treatment}: {e}. Error bars will be skipped.")
         yerr = None
-    else:
-        yerr = summary_stats["Std Expression"]
 
     # Bar plot with error bars
     plt.figure(figsize=(8, 6))
@@ -158,7 +116,7 @@ for treatment, group_data in treatment_groups:
         data=summary_stats,
         x="TT Code",
         y="Mean Expression",
-        yerr=yerr,  # Use error bars if valid
+        yerr=yerr,  # Validated error bars
         palette="gray",
         ci=None
     )
