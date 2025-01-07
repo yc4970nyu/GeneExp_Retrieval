@@ -42,8 +42,8 @@ st.sidebar.subheader("Select Up to 5 Genes for Group Analysis")
 genes = [st.sidebar.text_input(f"Gene {i + 1} (Optional):", key=f"gene_{i}") for i in range(5)]
 genes = [gene for gene in genes if gene]
 
-# Section: New Feature - Improved Combined Graph for Treatment Types
-st.header("📊 Gene Expression Across All Treatment Types (Improved Visualization)")
+# Section: New Feature - Improved Visualization with Box Plot
+st.header("📊 Gene Expression Across All Treatment Types (Box Plot)")
 if gene_name:
     if gene_name in df.index:
         # Filter data for the selected gene
@@ -57,44 +57,31 @@ if gene_name:
         gene_long.columns = ["TT Code", "Normalized Expression"]
         gene_long["Treatment"] = gene_long["TT Code"].map(treatment_mapping)
 
-        # Group by treatment types
-        treatment_groups = gene_long.groupby("Treatment")
-
-        # Prepare X-axis positions for grouped treatments
-        bar_width = 0.5
-        gap_between_groups = 2
-        x_positions = []
-        x_labels = []
-        group_start = 0  # Start position for each treatment type
-
-        # Combined plot
-        plt.figure(figsize=(14, 8))
-
-        for idx, (treatment, group_data) in enumerate(treatment_groups):
-            # Calculate x-axis positions for the group
-            x = np.arange(len(group_data)) + group_start
-            x_positions.extend(x)
-            x_labels.extend(group_data["TT Code"])
-
-            # Bar plot for the treatment
-            plt.bar(
-                x, group_data["Normalized Expression"],
-                width=bar_width, color=f"C{idx % 10}", alpha=0.7, edgecolor='black', label=treatment
-            )
-
-            # Overlay individual data points
-            for i, tt_code in enumerate(group_data["TT Code"]):
-                plt.scatter([x[i]] * len(group_data), group_data["Normalized Expression"], color='black', s=50)
-
-            # Increment group_start to create space between treatment types
-            group_start = x[-1] + gap_between_groups
+        # Box plot with individual data points
+        plt.figure(figsize=(12, 8))
+        sns.boxplot(
+            data=gene_long,
+            x="Treatment",
+            y="Normalized Expression",
+            palette="Set2",
+            showmeans=True,
+            meanprops={"marker": "o", "markerfacecolor": "red", "markeredgecolor": "black"}
+        )
+        sns.stripplot(
+            data=gene_long,
+            x="Treatment",
+            y="Normalized Expression",
+            color="black",
+            size=5,
+            jitter=True,
+            alpha=0.7
+        )
 
         # Plot formatting
-        plt.xticks(x_positions, x_labels, rotation=90, fontsize=10)
-        plt.xlabel("Treatments (TT Codes)", fontsize=14)
+        plt.xlabel("Treatment Types", fontsize=14)
         plt.ylabel("Normalized Expression", fontsize=14)
         plt.title(f"Normalized Expression of {gene_name} Across All Treatment Types", fontsize=16)
-        plt.legend(title="Treatment Types", fontsize=12)
+        plt.xticks(rotation=45, fontsize=12)
         plt.tight_layout()
         st.pyplot(plt)
     else:
