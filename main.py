@@ -90,9 +90,9 @@ if gene_name:
         st.pyplot(plt)
     else:
         st.error(f"Gene '{gene_name}' not found in the dataset.")
-        
-# Section: Individual Gene Analysis
-st.header("📊 Individual Gene High-Correlation Retrieval")
+
+# Section: Individual Gene Analysis with Top Positive and Negative Correlations
+st.header("📊 Individual Gene Correlation Analysis")
 if gene_name:
     if gene_name in df.index:
         col1, col2 = st.columns([1, 1])
@@ -111,20 +111,35 @@ if gene_name:
             plt.tight_layout()
             st.pyplot(plt)
 
-        # Top 10 Correlated Genes
+        # Correlation Analysis
+        correlations = df.corrwith(df.loc[gene_name], axis=1)
+        top_positive_genes = correlations.drop(gene_name).sort_values(ascending=False).head(10)
+        top_negative_genes = correlations.drop(gene_name).sort_values().head(10)
+
+        # Display Top 10 Positive Correlations
         with col2:
-            st.subheader(f"Top 10 Correlated Genes with {gene_name}")
-            correlations = df.corrwith(df.loc[gene_name], axis=1)
-            top_correlated_genes = correlations.drop(gene_name).sort_values(ascending=False).head(10)
-            st.table(top_correlated_genes)
+            st.subheader(f"Top 10 Positively Correlated Genes with {gene_name}")
+            st.table(top_positive_genes)
 
             plt.figure(figsize=(8, 6))
-            plt.barh(top_correlated_genes.index, top_correlated_genes.values, color='skyblue')
-            plt.title(f"Top 10 Correlated Genes with {gene_name}", fontsize=16)
+            plt.barh(top_positive_genes.index, top_positive_genes.values, color='skyblue')
+            plt.title(f"Top 10 Positively Correlated Genes with {gene_name}", fontsize=16)
             plt.xlabel("Pearson Correlation", fontsize=14)
             plt.ylabel("Genes", fontsize=14)
             plt.tight_layout()
             st.pyplot(plt)
+
+        # Display Top 10 Negative Correlations
+        st.subheader(f"Top 10 Negatively Correlated Genes with {gene_name}")
+        st.table(top_negative_genes)
+
+        plt.figure(figsize=(8, 6))
+        plt.barh(top_negative_genes.index, top_negative_genes.values, color='salmon')
+        plt.title(f"Top 10 Negatively Correlated Genes with {gene_name}", fontsize=16)
+        plt.xlabel("Pearson Correlation", fontsize=14)
+        plt.ylabel("Genes", fontsize=14)
+        plt.tight_layout()
+        st.pyplot(plt)
 
 # Section: Existing Features (Multi-Gene Analysis, Correlation Matrix)
 st.header("📈 Group Gene Analysis")
@@ -151,27 +166,15 @@ if genes:
         plt.tight_layout()
         st.pyplot(plt)
 
-        # Correlation Matrix
-        if len(valid_genes) > 1:
-            st.subheader("Correlation Matrix of Selected Genes")
-            correlation_matrix = df.loc[valid_genes].T.corr()
-            plt.figure(figsize=(8, 6))
-            plt.imshow(correlation_matrix, cmap="coolwarm", interpolation='nearest')
-            plt.colorbar()
-            plt.title("Correlation Matrix", fontsize=16)
-            plt.xticks(range(len(valid_genes)), valid_genes, rotation=45, fontsize=10)
-            plt.yticks(range(len(valid_genes)), valid_genes, fontsize=10)
-            plt.tight_layout()
-            st.pyplot(plt)
-
 # Footer
 st.markdown("""
 ---
-Source: 
-https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE172181
+Source:  
+https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE172181  
 ---
 Designed by Louis Cui and supervised by Dr. Satoru Kobayashi.  
 """)
+
 
 
 
